@@ -22,9 +22,9 @@ std::vector<a_type> fill_array()
     return sin_values_arr;
 }
 
-double calc_sum(const std::vector<a_type>& sin_values_arr)
+a_type calc_sum(const std::vector<a_type>& sin_values_arr)
 {
-    double sum = a_type(0);
+    a_type sum = a_type(0);
     for (auto val : sin_values_arr)
         sum += val;
     return sum;

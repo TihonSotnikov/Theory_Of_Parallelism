@@ -41,3 +41,6 @@
 *.dwo
 
 .vscode
+
+build*
+compile_flags.txt
