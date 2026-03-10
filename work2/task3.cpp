@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
     const int N       = atoi(argv[1]);
     const int threads = atoi(argv[2]);
-    const double tau = 1.0 / (N + 1.0);
+    const double tau  = 1.0 / (2.0 * N);
     const double eps  = 1e-5;
     omp_set_num_threads(threads);
 
