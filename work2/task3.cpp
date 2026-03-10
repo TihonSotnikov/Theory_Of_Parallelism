@@ -1,119 +1,136 @@
-#include <omp.h>
-#include <cstdio>
-#include <cstdlib>
+#include <iostream>
+#include <vector>
 #include <cmath>
+#include <omp.h>
+#include <string>
+#include <cstdlib>
 
-static int solve_v1(const double* A, double* x, const double* b, int N, double tau, double eps) {
-    double* r = new double[N];
-    int iter = 0;
-    while (true) {
-        double norm_r = 0.0, norm_b = 0.0;
-
-        #pragma omp parallel for schedule(static)
-        for (int i = 0; i < N; i++) {
-            double s = -b[i];
-            for (int j = 0; j < N; j++) s += A[(long)i * N + j] * x[j];
-            r[i] = s;
-        }
-
-        #pragma omp parallel for schedule(static) reduction(+:norm_r, norm_b)
-        for (int i = 0; i < N; i++) {
-            norm_r += r[i] * r[i];
-            norm_b += b[i] * b[i];
-        }
-
-        if (sqrt(norm_r) / sqrt(norm_b) < eps) break;
-
-        #pragma omp parallel for schedule(static)
-        for (int i = 0; i < N; i++)
-            x[i] -= tau * r[i];
-
-        iter++;
-    }
-    delete[] r;
-    return iter;
-}
-
-static int solve_v2(const double* A, double* x, const double* b, int N, double tau, double eps) {
-    double* r = new double[N];
-    int iter = 0;
-
-    #pragma omp parallel
-    {
-        while (true) {
-            #pragma omp for schedule(static)
-            for (int i = 0; i < N; i++) {
-                double s = -b[i];
-                for (int j = 0; j < N; j++) s += A[(long)i * N + j] * x[j];
-                r[i] = s;
-            }
-
-            double norm_r = 0.0, norm_b = 0.0;
-            #pragma omp for schedule(static) reduction(+:norm_r, norm_b)
-            for (int i = 0; i < N; i++) {
-                norm_r += r[i] * r[i];
-                norm_b += b[i] * b[i];
-            }
-
-            #pragma omp single
-            { iter++; }
-
-            if (sqrt(norm_r) / sqrt(norm_b) < eps) break;
-
-            #pragma omp for schedule(static)
-            for (int i = 0; i < N; i++)
-                x[i] -= tau * r[i];
-        }
-    }
-
-    delete[] r;
-    return iter;
-}
-
-static void init(double* A, double* x, double* b, int N) {
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++)
-            A[(long)i * N + j] = (i == j) ? 2.0 : 1.0;
-        b[i] = N + 1.0;
-        x[i] = 0.0;
-    }
-}
-
-int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <N> <threads>\n", argv[0]);
+int main(int argc, char** argv) {
+    if (argc != 4) {
+        std::cerr << "Usage: " << argv[0] << " <N> <threads> <version(1 or 2)>" << std::endl;
         return 1;
     }
 
-    const int N       = atoi(argv[1]);
-    const int threads = atoi(argv[2]);
-    const double tau  = 1.0 / (2.0 * N);
-    const double eps  = 1e-5;
+    int N = std::stoi(argv[1]);
+    int threads = std::stoi(argv[2]);
+    int version = std::stoi(argv[3]);
+
     omp_set_num_threads(threads);
 
-    double* A = new double[(long)N * N];
-    double* b = new double[N];
-    double* x = new double[N];
+    std::vector<double> A((size_t)N * N);
+    std::vector<double> b(N);
+    std::vector<double> x(N);
+    std::vector<double> Ax(N);
 
-    init(A, b, x, N);
-
-    double t0 = omp_get_wtime();
-    int iters = solve_v1(A, x, b, N, tau, eps);
-    double t1 = omp_get_wtime() - t0;
-    printf("v1  N=%d  threads=%d  iters=%d  time=%.4f s\n", N, threads, iters, t1);
-
-    // reset x
+    // Параллельная инициализация
     #pragma omp parallel for
-    for (int i = 0; i < N; i++) x[i] = 0.0;
+    for (int i = 0; i < N; ++i) {
+        b[i] = N + 1.0;
+        x[i] = 0.0;
+        for (int j = 0; j < N; ++j) {
+            A[(size_t)i * N + j] = (i == j) ? 2.0 : 1.0;
+        }
+    }
 
-    t0 = omp_get_wtime();
-    iters = solve_v2(A, x, b, N, tau, eps);
-    double t2 = omp_get_wtime() - t0;
-    printf("v2  N=%d  threads=%d  iters=%d  time=%.4f s\n", N, threads, iters, t2);
+    double norm_b_sq = 0.0;
+    #pragma omp parallel for reduction(+:norm_b_sq)
+    for (int i = 0; i < N; ++i) {
+        norm_b_sq += b[i] * b[i];
+    }
+    double norm_b = std::sqrt(norm_b_sq);
 
-    delete[] A;
-    delete[] b;
-    delete[] x;
+    // Аналитически вычисленный оптимальный шаг
+    double tau = 2.0 / (N + 2.0);
+    double eps = 1e-5;
+    
+    int iters = 0;
+    double start_time = omp_get_wtime();
+
+    if (version == 1) {
+        // Версия 1: #pragma omp parallel for на каждый цикл
+        while (true) {
+            #pragma omp parallel for
+            for (int i = 0; i < N; ++i) {
+                double sum = 0.0;
+                for (int j = 0; j < N; ++j) {
+                    sum += A[(size_t)i * N + j] * x[j];
+                }
+                Ax[i] = sum;
+            }
+
+            double norm_num_sq = 0.0;
+            #pragma omp parallel for reduction(+:norm_num_sq)
+            for (int i = 0; i < N; ++i) {
+                double diff = Ax[i] - b[i];
+                norm_num_sq += diff * diff;
+            }
+
+            if (std::sqrt(norm_num_sq) / norm_b < eps) {
+                break;
+            }
+
+            #pragma omp parallel for
+            for (int i = 0; i < N; ++i) {
+                x[i] -= tau * (Ax[i] - b[i]);
+            }
+            iters++;
+        }
+    } 
+    else if (version == 2) {
+        // Версия 2: одна параллельная область снаружи
+        bool stop = false;
+        double norm_num_sq = 0.0;
+
+        #pragma omp parallel
+        {
+            while (!stop) {
+                #pragma omp for
+                for (int i = 0; i < N; ++i) {
+                    double sum = 0.0;
+                    for (int j = 0; j < N; ++j) {
+                        sum += A[(size_t)i * N + j] * x[j];
+                    }
+                    Ax[i] = sum;
+                }
+
+                #pragma omp single
+                norm_num_sq = 0.0;
+                // Неявный барьер после single
+
+                #pragma omp for reduction(+:norm_num_sq)
+                for (int i = 0; i < N; ++i) {
+                    double diff = Ax[i] - b[i];
+                    norm_num_sq += diff * diff;
+                }
+
+                #pragma omp single
+                {
+                    if (std::sqrt(norm_num_sq) / norm_b < eps) {
+                        stop = true;
+                    } else {
+                        iters++;
+                    }
+                }
+                // Неявный барьер гарантирует, что все потоки увидят актуальный stop
+
+                if (stop) break;
+
+                #pragma omp for
+                for (int i = 0; i < N; ++i) {
+                    x[i] -= tau * (Ax[i] - b[i]);
+                }
+            }
+        }
+    }
+
+    double end_time = omp_get_wtime();
+    double time_spent = end_time - start_time;
+
+    std::cout << "Version: " << version 
+              << " | N: " << N 
+              << " | Threads: " << threads 
+              << " | Iters: " << iters 
+              << " | Time: " << time_spent << " s" << std::endl;
+
     return 0;
 }
