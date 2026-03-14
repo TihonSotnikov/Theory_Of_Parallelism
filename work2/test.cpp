@@ -2,6 +2,7 @@
 #include <vector>
 #include <iomanip>
 #include <omp.h>
+#include <math.h>
 
 #include "task1.cpp"
 #include "task2.cpp"
