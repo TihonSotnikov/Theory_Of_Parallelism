@@ -41,11 +41,11 @@ void run_task1(int m)
 
 double func(double x) { return exp(-x * x); }
 
-void run_task2(double (*func)(double), int n)
+void run_task2(double (*func)(double), long long n)
 {
     double T_sequential = 0.0;
 
-    std::vector<int> nums_threads = {2, 4, 6, 8};
+    std::vector<int> nums_threads = {1, 2, 4, 6, 8};
 
     std::cout << "Threads  Time(s)  Speedup\n";
     std::cout << "-------------------------\n";
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     if (*argv[1] == '1') run_task1(atoi(argv[2]));
-    else if (*argv[1] == '2') run_task2(func, atoi(argv[2]));
+    else if (*argv[1] == '2') run_task2(func, atoll(argv[2]));
     else
     {
         error_message(argv[0]);
