@@ -53,7 +53,7 @@ void run_task1(int m)
         init_data_for_task1(vec, matrix, result, m);
 
         double start_time = omp_get_wtime();
-        matrix_vector_product_task1(vec, matrix, result, m);
+        matrix_vector_product_task1(matrix, vec, result, m);
         double elapsed_time = omp_get_wtime() - start_time;
 
         if (cur_num_threads == 1)
