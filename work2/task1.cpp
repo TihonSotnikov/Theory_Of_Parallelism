@@ -2,7 +2,7 @@
 
 void matrix_vector_product_task1(const double* mat, const double* vec, double* res, size_t n)
 {
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < n; i++)
     {
         double sum = 0.0;
