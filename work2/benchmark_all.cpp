@@ -35,7 +35,7 @@ void init_data_for_task1(double*& vec, double*& matrix, double*& result, size_t 
     }
 }
 
-void run_task1(int m)
+void run_task1(int m, int num_runs)
 {
     double *vec = nullptr, *matrix = nullptr, *result = nullptr;
     double T_sequential = 0.0;
@@ -50,11 +50,20 @@ void run_task1(int m)
     {
         omp_set_num_threads(cur_num_threads);
 
-        init_data_for_task1(vec, matrix, result, m);
+        double total_time = 0.0;
 
-        double start_time = omp_get_wtime();
-        matrix_vector_product_task1(matrix, vec, result, m);
-        double elapsed_time = omp_get_wtime() - start_time;
+        for (int run = 0; run < num_runs; ++run)
+        {
+            init_data_for_task1(vec, matrix, result, m);
+
+            double start_time = omp_get_wtime();
+            matrix_vector_product_task1(matrix, vec, result, m);
+            total_time += omp_get_wtime() - start_time;
+
+            free_data(vec, matrix, result);
+        }
+
+        double elapsed_time = total_time / num_runs;
 
         if (cur_num_threads == 1)
             T_sequential = elapsed_time;
@@ -64,8 +73,6 @@ void run_task1(int m)
         std::cout << cur_num_threads << "        "
                   << elapsed_time << "  "
                   << speedup << '\n';
-
-        free_data(vec, matrix, result);
     }
 }
 
@@ -73,7 +80,7 @@ void run_task1(int m)
 
 double func(double x) { return exp(-x * x); }
 
-void run_task2(double (*func)(double), long long n)
+void run_task2(double (*func)(double), long long n, int num_runs)
 {
     double T_sequential = 0.0;
 
@@ -87,9 +94,16 @@ void run_task2(double (*func)(double), long long n)
     {
         omp_set_num_threads(cur_num_threads);
 
-        double start_time = omp_get_wtime();
-        integrate(func, -4, 4, n);
-        double elapsed_time = omp_get_wtime() - start_time;
+        double total_time = 0.0;
+
+        for (int run = 0; run < num_runs; ++run)
+        {
+            double start_time = omp_get_wtime();
+            integrate(func, -4, 4, n);
+            total_time += omp_get_wtime() - start_time;
+        }
+
+        double elapsed_time = total_time / num_runs;
 
         if (cur_num_threads == 1)
             T_sequential = elapsed_time;
@@ -121,7 +135,7 @@ void init_data_for_task3(double*& A, double*& b, double*& x, size_t n)
     }
 }
 
-void run_task3(size_t n)
+void run_task3(size_t n, int num_runs)
 {
     double *A = nullptr, *x = nullptr, *b = nullptr;
     double T_seq_v1 = 0.0, T_seq_v2 = 0.0;
@@ -136,25 +150,37 @@ void run_task3(size_t n)
     {
         omp_set_num_threads(cur_num_threads);
 
-        // Замер Варианта 1
-        init_data_for_task3(A, b, x, n);
-        double start_time1 = omp_get_wtime();
-        find_solution_v1(A, b, x, n);
-        double time_v1 = omp_get_wtime() - start_time1;
-        
-        if (cur_num_threads == 1) T_seq_v1 = time_v1;
-        double speedup_v1 = T_seq_v1 / time_v1;
-        free_data(A, b, x);
+        double total_time_v1 = 0.0;
+        double total_time_v2 = 0.0;
 
-        // Замер Варианта 2
-        init_data_for_task3(A, b, x, n);
-        double start_time2 = omp_get_wtime();
-        find_solution_v2(A, b, x, n);
-        double time_v2 = omp_get_wtime() - start_time2;
+        for (int run = 0; run < num_runs; ++run)
+        {
+            // Замер Варианта 1
+            init_data_for_task3(A, b, x, n);
+            double start_time1 = omp_get_wtime();
+            find_solution_v1(A, b, x, n);
+            total_time_v1 += omp_get_wtime() - start_time1;
+            free_data(A, b, x);
+
+            // Замер Варианта 2
+            init_data_for_task3(A, b, x, n);
+            double start_time2 = omp_get_wtime();
+            find_solution_v2(A, b, x, n);
+            total_time_v2 += omp_get_wtime() - start_time2;
+            free_data(A, b, x);
+        }
+
+        double time_v1 = total_time_v1 / num_runs;
+        double time_v2 = total_time_v2 / num_runs;
         
-        if (cur_num_threads == 1) T_seq_v2 = time_v2;
+        if (cur_num_threads == 1) 
+        {
+            T_seq_v1 = time_v1;
+            T_seq_v2 = time_v2;
+        }
+
+        double speedup_v1 = T_seq_v1 / time_v1;
         double speedup_v2 = T_seq_v2 / time_v2;
-        free_data(A, b, x);
 
         std::cout << std::setw(7) << cur_num_threads << "  "
                   << std::setw(10) << time_v1 << "  "
@@ -170,9 +196,9 @@ void error_message(const char* prog_name)
 {
     std::cerr << "\nInvalid arguments.\n\n"
               << "Correct usage:\n"
-              << "  " << prog_name << " 1 M      # Task 1, matrix/vector size M\n"
-              << "  " << prog_name << " 2 N      # Task 2, number of integration points N\n"
-              << "  " << prog_name << " 3 N      # Task 3, matrix size N\n\n";
+              << "  " << prog_name << " 1 M [R]    # Task 1, matrix/vector size M, R runs (default 1)\n"
+              << "  " << prog_name << " 2 N [R]    # Task 2, number of integration points N, R runs (default 1)\n"
+              << "  " << prog_name << " 3 N [R]    # Task 3, matrix size N, R runs (default 1)\n\n";
     std::exit(1);
 }
 
@@ -183,9 +209,13 @@ int main(int argc, char* argv[])
         error_message(argv[0]);
         return 1;
     }
-    if (*argv[1] == '1') run_task1(atoi(argv[2]));
-    else if (*argv[1] == '2') run_task2(func, atoll(argv[2]));
-    else if (*argv[1] == '3') run_task3(atoll(argv[2]));
+
+    int num_runs = (argc >= 4) ? std::atoi(argv[3]) : 1;
+    if (num_runs <= 0) num_runs = 1;
+
+    if (*argv[1] == '1') run_task1(std::atoi(argv[2]), num_runs);
+    else if (*argv[1] == '2') run_task2(func, std::atoll(argv[2]), num_runs);
+    else if (*argv[1] == '3') run_task3(std::atoll(argv[2]), num_runs);
     else
     {
         error_message(argv[0]);
