@@ -4,6 +4,11 @@ project(task1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options(-fopenmp)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+add_compile_options(-fopenmp -O3 -march=native -ffast-math)
 
 add_executable(benchmark benchmark_all.cpp)
+target_link_options(benchmark PRIVATE -fopenmp)

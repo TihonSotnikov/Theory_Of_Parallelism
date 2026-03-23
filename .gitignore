@@ -45,3 +45,5 @@
 build*
 compile_flags.txt
 *.rtf
+
+.DS_Store

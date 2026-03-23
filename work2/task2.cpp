@@ -9,7 +9,7 @@ double integrate(double (*func)(double), double a, double b, size_t n)
     {
         double sumloc = 0.0;
 
-        #pragma omp for
+        #pragma omp for schedule(static)
         for (int i = 0; i < n; i++)
             sumloc += func(a + h * (i + 0.5));
 

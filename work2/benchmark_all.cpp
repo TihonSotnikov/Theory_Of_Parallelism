@@ -25,7 +25,7 @@ void init_data_for_task1(double*& vec, double*& matrix, double*& result, size_t 
     matrix = new double[size * size];
     result = new double[size];
 
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < size; i++)
     {
         vec[i] = i;
@@ -125,7 +125,7 @@ void init_data_for_task3(double*& A, double*& b, double*& x, size_t n)
     x = new double[n];
 
     double b_val = n + 1;
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < n; i++)
     {
         b[i] = b_val;
