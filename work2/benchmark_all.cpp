@@ -40,16 +40,14 @@ void run_task1(const int n, const int num_runs = 1, const int num_threads = 1)
     omp_set_num_threads(num_threads);
     double total_time = 0.0;
     size_t size = (size_t)n;
+    double *vec = nullptr, *matrix = nullptr, *result = nullptr;
 
-    for (int run = 0; run < num_runs; ++run)
+    for (int run = 0; run < num_runs + 1; ++run)
     {
-        double *vec = nullptr, *matrix = nullptr, *result = nullptr;
         init_data_for_task1(vec, matrix, result, size);
-
         double start_time = omp_get_wtime();
         matrix_vector_product_task1(matrix, vec, result, size);
-        total_time += (omp_get_wtime() - start_time);
-
+        if (run > 0) total_time += (omp_get_wtime() - start_time);
         free_data(vec, matrix, result);        
     }
 
@@ -65,11 +63,11 @@ void run_task2(double (*func)(double), const int n, const int num_runs = 1, cons
     omp_set_num_threads(num_threads);
     double total_time = 0.0;
 
-    for (int run = 0; run < num_runs; ++run)
+    for (int run = 0; run < num_runs + 1; ++run)
     {
         double start_time = omp_get_wtime();
         integrate(func, -4, 4, (size_t)n);
-        total_time += (omp_get_wtime() - start_time);        
+        if (run > 0) total_time += (omp_get_wtime() - start_time);        
     }
 
     std::cout << total_time / num_runs << '\n';
@@ -83,14 +81,14 @@ void init_data_for_task3(double*& A, double*& b, double*& x, size_t n)
     b = new double[n];
     x = new double[n];
 
-    double b_val = n + 1;
+    double c = 40.0 / n; 
     #pragma omp parallel for OMP_SCHEDULE
     for (size_t i = 0; i < n; i++)
     {
-        b[i] = b_val;
+        b[i] = i + 1.0; 
         x[i] = 0.0;
         for (size_t j = 0; j < n; j++)
-            A[i * n + j] = (i == j) ? 2.0 : 1.0;
+            A[i * n + j] = (i == j) ? 1.0 + c : c;
     }
 }
 
@@ -99,21 +97,20 @@ void run_task3(const int n, const int num_runs = 1, const int num_threads = 1)
     omp_set_num_threads(num_threads);
     double total_time_v1 = 0.0;
     double total_time_v2 = 0.0;
+    double *A = nullptr, *b = nullptr, *x = nullptr;
 
-    for (int run = 0; run < num_runs; ++run)
+    for (int run = 0; run < num_runs + 1; ++run)
     {
-        double *A = nullptr, *b = nullptr, *x = nullptr;
         init_data_for_task3(A, b, x, n);
-        double start_time1 = omp_get_wtime();
+        double start_time_v1 = omp_get_wtime();
         find_solution_v1(A, b, x, n);
-        total_time_v1 += omp_get_wtime() - start_time1;
+        if (run > 0) total_time_v1 += (omp_get_wtime() - start_time_v1);
         free_data(A, b, x);
 
-        double *A = nullptr, *b = nullptr, *x = nullptr;
         init_data_for_task3(A, b, x, n);
-        double start_time2 = omp_get_wtime();
+        double start_time_v2 = omp_get_wtime();
         find_solution_v2(A, b, x, n);
-        total_time_v2 += omp_get_wtime() - start_time2;
+        if (run > 0) total_time_v2 += (omp_get_wtime() - start_time_v2);
         free_data(A, b, x);
     }
 

@@ -44,3 +44,13 @@
 
 build*
 compile_flags.txt
+*.rtf
+
+# uv
+.python-version
+pyproject.toml
+uv.lock
+
+# other
+.DS_Store
+tst.cpp

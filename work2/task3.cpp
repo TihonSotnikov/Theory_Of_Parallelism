@@ -22,7 +22,7 @@ void find_solution_v1(const double* A, const double* b, double* x, size_t n)
         b_norm += b[i] * b[i];
     b_norm = sqrt(b_norm);
 
-    double tau = 1.0 / (n + 1.0);
+    double tau = 1.0 / 21.0;
 
     for (size_t iter = 0; iter < 10000; iter++)
     {
@@ -66,7 +66,7 @@ void find_solution_v2(const double* A, const double* b, double* x, size_t n)
         b_norm += b[i] * b[i];
     b_norm = sqrt(b_norm);
 
-    double tau = 1.0 / (n + 1.0);
+    double tau = 1.0 / 21.0; 
     double norm_sq = 0.0;
 
     #pragma omp parallel
