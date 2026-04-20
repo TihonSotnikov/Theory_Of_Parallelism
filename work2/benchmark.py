@@ -448,7 +448,7 @@ def main() -> None:
     print("=" * 60)
 
     # Запуск таймера ожидания перед выполнением тестов
-    wait_until(5, 0)
+    wait_until(3, 0)
 
     if not os.path.isdir(BUILD_DIR):
         print(
