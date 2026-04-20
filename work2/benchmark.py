@@ -34,7 +34,7 @@ TASK_CONFIGS = {
     },
     3: {
         "task_id": 3,
-        "N": [50000],
+        "N": [20000],
         "iterations": 5,
         "binaries": ["benchmark_static", "benchmark_dynamic", "benchmark_guided"],
         "schedules": ["static", "dynamic", "guided"],
