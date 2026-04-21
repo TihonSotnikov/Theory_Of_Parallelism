@@ -1,0 +1,31 @@
+============================================================
+Multithreaded C++ Benchmarking
+============================================================
+[Timer] Ожидание старта до 2026-04-21 03:00:00 (Осталось: 8779 сек.)
+
+[Task 1] Iterations: 15
+  N=20000      | static     | Threads: 1 2 4 6 8 16 20 40 OK
+  N=40000      | static     | Threads: 1 2 4 6 8 16 20 40 OK
+
+[Task 2] Iterations: 100
+  N=40000000   | static     | Threads: 1 2 4 6 8 16 20 40 OK
+
+[Task 3] Iterations: 5
+  N=20000      | static     | Threads: 1 2 4 6 8 16 20 40 OK
+  N=20000      | dynamic    | Threads: 1 2 4 6 8 16 20 40 OK
+  N=20000      | guided     | Threads: 1 2 4 6 8 16 20 40 OK
+
+============================================================
+Benchmark Summary
+============================================================
+Successful runs : 1280
+Failed runs     : 0
+
+Generating Plots...
+  Plot saved: ./report/plot_task1_N20000.png
+  Plot saved: ./report/plot_task1_N40000.png
+  Plot saved: ./report/plot_task2_N40000000.png
+  Plot saved: ./report/plot_task3_N20000_v1.png
+  Plot saved: ./report/plot_task3_N20000_v2.png
+  Plot saved: ./report/plot_task3_N20000_all.png
+Done.
