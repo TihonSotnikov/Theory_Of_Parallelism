@@ -1,19 +1,25 @@
 cmake_minimum_required(VERSION 3.15)
 project(ParallelBench LANGUAGES CXX)
 
-option(ENABLE_LOGGING "Enable benchmark logging" ON)
+option(BENCHMARK_LOGGING "Enable benchmark logging" OFF)
 
 add_executable(bench task1.cpp)
-
 target_compile_features(bench PRIVATE cxx_std_20)
 
-target_compile_options(bench PRIVATE 
-    -O3 
-    -march=native 
-    -ffast-math
-)
+target_compile_options(bench PRIVATE -O3)
 
-if(ENABLE_LOGGING)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+    target_compile_options(bench PRIVATE 
+        -march=native 
+        -ffast-math
+    )
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
+    target_compile_options(bench PRIVATE 
+        -fast
+    )
+endif()
+
+if(BENCHMARK_LOGGING)
     target_compile_definitions(bench PRIVATE BENCHMARK_LOGGING)
 endif()
 
